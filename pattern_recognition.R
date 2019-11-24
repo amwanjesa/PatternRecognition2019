@@ -5,7 +5,7 @@ library(nnet)
 mnist.dat <- read.csv("mnist.csv")
 
 ## First question
-sparsity(as.matrix(mnist.dat[,2:ncol(mnist.dat)]))
+sparse <- sparsity(as.matrix(mnist.dat[,2:ncol(mnist.dat)]))
 means <- c()
 means <- colMeans(mnist.dat[,2:ncol(mnist.dat)])
 
@@ -21,13 +21,26 @@ ink_mean <- rowMeans(mnist.dat[,2:ncol(mnist.dat)])
 ink_sd <- apply(mnist.dat[,2:ncol(mnist.dat)], 1, sd)
 
 ink_scaled <- scale(ink_cost)
-ink_dataset <- as.data.frame(cbind(ink_scaled, as.factor(mnist.dat$label))) 
-ink_model <- multinom(V2 ~ V1, ink_dataset)
+# V1 = label
+# V2 = ink_cost scaled
+ink_dataset <- as.data.frame(cbind(as.factor(mnist.dat$label), ink_scaled)) 
+ink_model <- multinom(V1 ~ V2, ink_dataset)
+ink_prediction <- predict(ink_model, ink_dataset)
+ink_confusion_matrix <- table(ink_dataset$V1, ink_prediction)
 
-## Third question: density (ink_cost) + sparsity
+## Third question: sparsity
+sparse_values <- c()
+for(i in 1:nrow(mnist.dat)){
+  sparse_values[i] <- sparsity(as.matrix(mnist.dat[i,2:ncol(mnist.dat)]))
+}
+sparse_scaled <- scale(sparse_values)
+sparse_dataset <- as.data.frame(cbind(as.factor(mnist.dat$label), sparse_scaled))
+sparse_model <- multinom(V1 ~ V2, sparse_dataset)
+sparse_prediction <- predict(sparse_model, sparse_dataset)
+sparse_confusion_matrix <- table(sparse_dataset$V1, sparse_prediction)
 
-  
-  
-  
-  
-  
+## Fourth question: density (ink_cost) + sparsity  
+ink_sparsity_dataset <- as.data.frame(cbind(as.factor(mnist.dat$label), ink_scaled, sparse_scaled))  
+ink_sparsity_model <- multinom(V1 ~ ., ink_sparsity_dataset)  
+ink_sparsity_prediction <- predict(ink_sparsity_model, ink_sparsity_dataset)
+ink_sparsity_confusion_matrix <- table(ink_sparsity_dataset$V1, ink_sparsity_prediction)
