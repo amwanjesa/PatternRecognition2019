@@ -1,9 +1,10 @@
 library(OpenImageR)
 library(coop)
+library(nnet)
 
-#mnist.dat <- read.csv("mnist.csv")
+mnist.dat <- read.csv("mnist.csv")
 
-# First question
+## First question
 sparsity(as.matrix(mnist.dat[,2:ncol(mnist.dat)]))
 means <- c()
 means <- colMeans(mnist.dat[,2:ncol(mnist.dat)])
@@ -19,6 +20,9 @@ ink_cost <- rowSums(mnist.dat[,2:ncol(mnist.dat)])
 ink_mean <- rowMeans(mnist.dat[,2:ncol(mnist.dat)])
 ink_sd <- apply(mnist.dat[,2:ncol(mnist.dat)], 1, sd)
 
+ink_scaled <- scale(ink_cost)
+ink_dataset <- as.data.frame(cbind(ink_scaled, as.factor(mnist.dat$label))) 
+ink_model <- multinom(V2 ~ V1, ink_dataset)
 
 ## Third question: density (ink_cost) + sparsity
 
