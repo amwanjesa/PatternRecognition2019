@@ -3,6 +3,7 @@ library(coop)
 library(nnet)
 library(glmnet)
 library(e1071)
+library(pracma)
 
 mnist.dat <- read.csv("mnist.csv")
 
@@ -76,35 +77,45 @@ mnist.dat <- read.csv("mnist.csv")
   names(testing_set_14)[1] <- "label"
   
   ## 28 x 28
-  # 10-fold cross-validation -> multinomial model
-  regularized_multinomial_model <- cv.glmnet(x = as.matrix(training_set[,2:ncol(training_set)]), y = training_set[,1])
-  # 5-fold cross-validation -> multinomial model
-  down_multinomial_model_5f <- cv.glmnet(x = as.matrix(training_set[,2:ncol(training_set)]), y = training_set[,1], nfolds = 5)
+  {
+    # 10-fold cross-validation -> multinomial model
+    regularized_multinomial_model <- cv.glmnet(x = as.matrix(training_set[,2:ncol(training_set)]), y = training_set[,1])
+    # 5-fold cross-validation -> multinomial model
+    down_multinomial_model_5f <- cv.glmnet(x = as.matrix(training_set[,2:ncol(training_set)]), y = training_set[,1], nfolds = 5)
 
-  # 10-fold cross-validation -> support vector machine model
-  svm_model_tune <- tune.svm(as.factor(label) ~ ., data = training_set)
-  svm_model <- svm(as.factor(label) ~ ., data = training_set, cross = 10)
-  # 5-fold cross-validation -> support vector machine model
-  svm_model_5f <- svm(as.factor(label) ~ ., data = training_set, cross = 5)
+    # 10-fold cross-validation -> support vector machine model
+    svm_model_tune <- tune.svm(as.factor(label) ~ ., data = training_set)
+    svm_model <- svm(as.factor(label) ~ ., data = training_set, cross = 10)
+    # 5-fold cross-validation -> support vector machine model
+    svm_model_5f <- svm(as.factor(label) ~ ., data = training_set, cross = 5)
   
-  # Neural network
-  nn_model_tune <- tune.nnet(as.factor(label) ~ ., data = training_set, size = 5, MaxNWts = 20000)
-  nn_model <- nnet(as.factor(label) ~ ., data = training_set, size = 5, MaxNWts = 5000)
-  
+    # Neural network
+    nn_model_tune <- tune.nnet(as.factor(label) ~ ., data = training_set, size = 5, MaxNWts = 20000)
+    nn_model <- nnet(as.factor(label) ~ ., data = training_set, size = 5, MaxNWts = 5000)
+  }
+    
   ## 14 x 14
-  # 10-fold cross-validation -> multinomial model
-  down_multinomial_model <- cv.glmnet(x = as.matrix(training_set_14[,2:ncol(training_set_14)]), y = training_set_14[,1])
-  # 5-fold cross-validation -> multinomial model
-  down_multinomial_model_5f <- cv.glmnet(x = as.matrix(training_set_14[,2:ncol(training_set_14)]), y = training_set_14[,1], nfolds = 5)
+  {
+    # 10-fold cross-validation -> multinomial model
+    down_multinomial_model <- cv.glmnet(x = as.matrix(training_set_14[,2:ncol(training_set_14)]), y = training_set_14[,1],
+                                        alpha = c(0.001, 0.01, 1, 3, 5, 10), nlambda = c(10, 50, 100, 200, 500, 1000))
+    
+    # Delete columns with 0
+    columns_delete <- c()
+    for(i in 2:ncol(training_set_14)){
+      if(!any(training_set_14[,i])){
+        columns_delete <- c(columns_delete, i)
+      }
+    }
+    gamma_range <- logspace(-9, 3, n = 20)
+    # 10-fold cross-validation -> support vector machine model
+    down_svm_model_tune <- tune.svm(as.factor(label) ~ ., data = training_set_14, cost = 1:10, gamma = gamma_range, 
+                                    degree = c(1:10), epsilon = logspace(-1, 0.5, n=3))
+    down_svm_model <- svm(as.factor(label) ~ ., data = training_set_14, cross = 10)
   
-  # 10-fold cross-validation -> support vector machine model
-  down_svm_model_tune <- tune.svm(as.factor(label) ~ ., data = training_set_14)
-  down_svm_model <- svm(as.factor(label) ~ ., data = training_set_14, cross = 10)
-  # 5-fold cross-validation -> support vector machine model
-  down_svm_model_5f <- svm(as.factor(label) ~ ., data = training_set_14, cross = 5)
-  
-  # Neural network
-  down_nn_model_tune <- tune.nnet(as.factor(label) ~ ., data = training_set_14, size = 5, MaxNWts = 5000)
-  down_nn_model <- nnet(as.factor(label) ~ ., data = training_set_14, size = 5, MaxNWts = 5000)
-  
+    # Neural network
+    down_nn_model_tune <- tune.nnet(as.factor(label) ~ ., data = training_set_14, size = logspace(0, 5, n = 6), 
+                                    decay = , MaxNWts = 5000)
+    down_nn_model <- nnet(as.factor(label) ~ ., data = training_set_14, size = 5, MaxNWts = 5000)
+  }
 }
