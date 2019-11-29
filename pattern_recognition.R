@@ -1,6 +1,8 @@
 library(OpenImageR)
 library(coop)
 library(nnet)
+library(glmnet)
+library(e1071)
 
 mnist.dat <- read.csv("mnist.csv")
 
@@ -44,3 +46,21 @@ ink_sparsity_dataset <- as.data.frame(cbind(as.factor(mnist.dat$label), ink_scal
 ink_sparsity_model <- multinom(V1 ~ ., ink_sparsity_dataset)  
 ink_sparsity_prediction <- predict(ink_sparsity_model, ink_sparsity_dataset)
 ink_sparsity_confusion_matrix <- table(ink_sparsity_dataset$V1, ink_sparsity_prediction)
+
+#Fifth quesitons
+set.seed(101)
+sample <- sample.int(n = nrow(mnist.dat), size = 5000, replace = F)
+
+
+training_data <- mnist.dat[sample,]
+test_data <- mnist.dat[-sample,]
+x <- training_data[,2:ncol(training_data)]
+y <- as.numeric(training_data[, 1])
+
+#Cross Validation Logistic Regression
+cv_log_reg <- cv.glmnet(as.matrix(x), y, family = "multinomial")
+
+#Cross validation SVM
+cv_svm <- tune.svm(x,y)
+summary(cv_svm)
+plot(cv_svm)
