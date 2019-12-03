@@ -88,12 +88,12 @@ mnist.dat <- read.csv("mnist.csv")
   {
     # 10-fold cross-validation -> multinomial model
     set.seed(42)
-    regularized_multinomial_model <- cv.glmnet(x = as.matrix(training_set[,2:ncol(training_set)]), y = training_set[,1], family="multinomial")
+    logistic_multinomial_classifier <- cv.glmnet(x = as.matrix(training_set[,2:ncol(training_set)]), y = training_set[,1], family="multinomial", nlambda=10000)
     # 5-fold cross-validation -> multinomial model
-    down_multinomial_model_5f <- cv.glmnet(x = as.matrix(training_set[,2:ncol(training_set)]), y = training_set[,1], nfolds = 5, family="multinomial")
+    logistic_mulitnomial_classifier_5f <- cv.glmnet(x = as.matrix(training_set[,2:ncol(training_set)]), y = training_set[,1], nfolds = 5, family="multinomial", nlambda=10000)
     
-    result_10f <- predict(regularized_multinomial_model, newx=as.matrix(testing_set[,2:ncol(testing_set)]), s="lambda.min", type="class")
-    result_5f <- predict(down_multinomial_model_5f, newx=as.matrix(testing_set[,2:ncol(testing_set)]), s="lambda.min", type="class")
+    result_10f <- predict(logistic_multinomial_classifier, newx=as.matrix(testing_set[,2:ncol(testing_set)]), s="lambda.min", type="class")
+    result_5f <- predict(logistic_mulitnomial_classifier_5f, newx=as.matrix(testing_set[,2:ncol(testing_set)]), s="lambda.min", type="class")
     
       
     confusion_matrix_10f <- ftable(testing_set[,1], result_10f)
@@ -115,12 +115,12 @@ mnist.dat <- read.csv("mnist.csv")
   {
     # 10-fold cross-validation -> multinomial model
     set.seed(42)
-    regularized_multinomial_model_14 <- cv.glmnet(x = as.matrix(training_set_14[,2:ncol(training_set)]), y = training_set_14[,1], family="multinomial")
+    logistic_multinomial_classifier_14 <- cv.glmnet(x = as.matrix(training_set_14[,2:ncol(training_set)]), y = training_set_14[,1], family="multinomial")
     # 5-fold cross-validation -> multinomial model
-    down_multinomial_model_5f_14 <- cv.glmnet(x = as.matrix(training_set_14[,2:ncol(training_set)]), y = training_set_14[,1], nfolds = 5, family="multinomial")
+    logistic_mulitnomial_classifier_5f_14 <- cv.glmnet(x = as.matrix(training_set_14[,2:ncol(training_set)]), y = training_set_14[,1], nfolds = 5, family="multinomial")
     
-    result_10f <- predict(regularized_multinomial_model_14, newx=as.matrix(testing_set_14[,2:ncol(testing_set_14)]), s="lambda.min", type="class")
-    result_5f <- predict(down_multinomial_model_5f_14, newx=as.matrix(testing_set_14[,2:ncol(testing_set_14)]), s="lambda.min", type="class")
+    result_10f <- predict(logistic_multinomial_classifier_14, newx=as.matrix(testing_set_14[,2:ncol(testing_set_14)]), s="lambda.min", type="class")
+    result_5f <- predict(logistic_mulitnomial_classifier_5f_14, newx=as.matrix(testing_set_14[,2:ncol(testing_set_14)]), s="lambda.min", type="class")
     
     
     confusion_matrix_10f_14 <- ftable(testing_set[,1], result_10f)
