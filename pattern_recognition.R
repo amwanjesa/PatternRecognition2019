@@ -4,6 +4,7 @@ library(nnet)
 library(glmnet)
 library(e1071)
 library(pracma)
+library(ggplot2)
 
 mnist.dat <- read.csv("mnist.csv")
 
@@ -66,32 +67,56 @@ mnist.dat <- read.csv("mnist.csv")
   
     training_set_14 <- data.frame()
     for (i in 1:nrow(training_set)){
-      training_set_14 <- rbind(training_set_14, down_sample_image(as.matrix(training_set[i,2:ncol(training_set)]), 2))
+      training_set_14 <- rbind(training_set_14, down_sample_image(as.matrix(training_set[i,2:ncol(training_set)]), 4))
     }
     training_set_14 <- cbind(training_set[,1], training_set_14)
     names(training_set_14)[1] <- "label"
   
     testing_set_14 <- data.frame()
     for (i in 1:nrow(testing_set)){
-      testing_set_14 <- rbind(testing_set_14, down_sample_image(as.matrix(testing_set[i,2:ncol(testing_set)]), 2))
+      testing_set_14 <- rbind(testing_set_14, down_sample_image(as.matrix(testing_set[i,2:ncol(testing_set)]), 4))
     }
     testing_set_14 <- cbind(testing_set[,1], testing_set_14)
     names(testing_set_14)[1] <- "label"
+    
+    for(i in 2:ncol(training_set_14)){
+      names(training_set_14)[i] <- i
+      names(testing_set_14)[i] <- i
+    }
   }
   
   ## 28 x 28
   {
     # Multinomial model
     regularized_multinomial_model <- cv.glmnet(x = as.matrix(training_set[,2:ncol(training_set)]), y = training_set[,1])
+    # Multinomial model
     down_multinomial_model_5f <- cv.glmnet(x = as.matrix(training_set[,2:ncol(training_set)]), y = training_set[,1], nfolds = 5)
 
+    # Delete columns with 0
+    cd <- c()
+    for(i in 2:ncol(training_set)){
+      if(!any(training_set[,i])){
+        cd <- c(cd, i)
+      }
+    }
+    
     # Support vector machine model
-    svm_model_tune <- tune.svm(as.factor(label) ~ ., data = training_set)
-    svm_model <- svm(as.factor(label) ~ ., data = training_set, cross = 10)
+    svm_model_tune <- tune.svm(as.factor(label) ~ ., data = training_set, cost = c(1:10))
+    svm_model <- svm(as.factor(label) ~ ., data = training_set[,-cd], cost = 5)
+  
+    accuracy_svm_28 <- sum(diag(table(testing_set[,1],predict(svm_model, testing_set[,-c(1, cd)]))))/nrow(testing_set)
     
     # Neural network
-    nn_model_tune <- tune.nnet(as.factor(label) ~ ., data = training_set, size = 5, MaxNWts = 20000)
-    nn_model <- nnet(as.factor(label) ~ ., data = training_set, size = 5, MaxNWts = 5000)
+    nn_model_tune <- tune.nnet(as.factor(label) ~ ., data = training_set, size = c(1, 5, 10, 25), MaxNWts = 50000)
+    nn_model <- nnet(as.factor(label) ~ ., data = training_set, size = 25, MaxNWts = 50000)
+    
+    d2 <- c()
+    for (i in 1:nrow(testing_set)){
+      d2 <- c(d, (match(max(predict(nn_model, testing_set[i,-1])), predict(nn_model, testing_set[i,-1]))-1))  
+    }
+    
+    accuracy_nn_28 <- sum(diag(table(testing_set[,1],d2))))/nrow(testing_set)
+    
   }
     
   ## 14 x 14
@@ -108,18 +133,26 @@ mnist.dat <- read.csv("mnist.csv")
       }
     }
     
-    # Rename data sets
-    for(i in 2:ncol(training_set_14)){
-      names(training_set_14)[i] <- i
-      names(testing_set_14)[i] <- i
-    }
+    # Support vector machine model
+    down_svm_model_tune <- tune.svm(as.factor(label) ~ ., data = training_set_14, cost = 1:10)
+    down_svm_model <- svm(as.factor(label) ~ ., data = training_set_14[,-columns_delete], cost = 6)
 
-    # Support vector machine
-    down_svm_model_tune <- tune.svm(as.factor(label) ~ ., data = training_set_14, cost = 1:10, gamma = logspace(-9, 3, n = 5))
-    down_svm_model <- svm(as.factor(label) ~ ., data = training_set_14[,-columns_delete], cost = 2, gamma = 1e-06)
-  
+    accuracy_svm <- sum(diag(table(testing_set_14[,1],predict(down_svm_model, testing_set_14[,-c(1, columns_delete)]))))/nrow(testing_set_14)
+      
     # Neural network
     down_nn_model_tune <- tune.nnet(as.factor(label) ~ ., data = training_set_14, size = c(1, 5, 10, 25), decay = c(0.1, 0.5, 1), MaxNWts = 50000)
-    down_nn_model <- nnet(as.factor(label) ~ ., data = training_set_14, size = 10, MaxNWts = 5000)
+    down_nn_model <- nnet(as.factor(label) ~ ., data = training_set_14, size = 25, MaxNWts = 50000)
+    
+    d <- c()
+    
+    for (i in 1:nrow(testing_set_14)){
+      d <- c(d, (match(max(predict(down_nn_model, testing_set_14[i,-1])), predict(down_nn_model, testing_set_14[i,-1]))-1))  
+    }
+    
+    accuracy_nn <- sum(diag(table(testing_set_14[,1],d)))/nrow(testing_set_14)
+    
+    Size <- down_nn_model_tune$performances$size
+    ggplot(down_nn_model_tune$performances, aes(down_nn_model_tune$performances$decay, down_nn_model_tune$performances$error, Group = Size, color = Size)) + 
+      geom_point() + xlab("Decay") + ylab("Error")
   }
 }
