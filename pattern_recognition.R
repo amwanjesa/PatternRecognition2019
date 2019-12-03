@@ -7,6 +7,7 @@ library(pracma)
 library(ggplot2)
 
 mnist.dat <- read.csv("mnist.csv")
+set.seed(42)
 
 ## First question
 {
@@ -85,13 +86,25 @@ mnist.dat <- read.csv("mnist.csv")
     }
   }
   
+  
+  
   ## 28 x 28
   {
-    # Multinomial model
-    regularized_multinomial_model <- cv.glmnet(x = as.matrix(training_set[,2:ncol(training_set)]), y = training_set[,1])
-    # Multinomial model
-    down_multinomial_model_5f <- cv.glmnet(x = as.matrix(training_set[,2:ncol(training_set)]), y = training_set[,1], nfolds = 5)
-
+    # 10-fold cross-validation -> multinomial model
+    logistic_multinomial_classifier <- cv.glmnet(x = as.matrix(training_set[,2:ncol(training_set)]), y = training_set[,1], family="multinomial")
+    # 5-fold cross-validation -> multinomial model
+    logistic_mulitnomial_classifier_5f <- cv.glmnet(x = as.matrix(training_set[,2:ncol(training_set)]), y = training_set[,1], nfolds = 5, family="multinomial")
+    
+    result_10f <- predict(logistic_multinomial_classifier, newx=as.matrix(testing_set[,2:ncol(testing_set)]), s="lambda.min", type="class")
+    result_5f <- predict(logistic_mulitnomial_classifier_5f, newx=as.matrix(testing_set[,2:ncol(testing_set)]), s="lambda.min", type="class")
+    
+      
+    confusion_matrix_10f <- ftable(testing_set[,1], result_10f)
+    confusion_matrix_5f <- ftable(testing_set[,1], result_5f)
+    
+    acc_10f <- sum(diag(confusion_matrix_10f))/sum(confusion_matrix_10f)
+    acc_5f <- sum(diag(confusion_matrix_5f))/sum(confusion_matrix_5f)
+  
     # Delete columns with 0
     cd <- c()
     for(i in 2:ncol(training_set)){
@@ -121,9 +134,20 @@ mnist.dat <- read.csv("mnist.csv")
     
   ## 14 x 14
   {
-    # Multinomial model
-    down_multinomial_model <- cv.glmnet(x = as.matrix(training_set_14[,2:ncol(training_set_14)]), y = training_set_14[,1],
-                                        alpha = c(0.001, 0.01, 1, 3, 5, 10), nlambda = c(10, 50, 100, 200, 500, 1000))
+    # 10-fold cross-validation -> multinomial model
+    logistic_multinomial_classifier_14 <- cv.glmnet(x = as.matrix(training_set_14[,2:ncol(training_set)]), y = training_set_14[,1], family="multinomial")
+    # 5-fold cross-validation -> multinomial model
+    logistic_mulitnomial_classifier_5f_14 <- cv.glmnet(x = as.matrix(training_set_14[,2:ncol(training_set)]), y = training_set_14[,1], nfolds = 5, family="multinomial")
+    
+    result_10f <- predict(logistic_multinomial_classifier_14, newx=as.matrix(testing_set_14[,2:ncol(testing_set_14)]), s="lambda.min", type="class")
+    result_5f <- predict(logistic_mulitnomial_classifier_5f_14, newx=as.matrix(testing_set_14[,2:ncol(testing_set_14)]), s="lambda.min", type="class")
+    
+    
+    confusion_matrix_10f_14 <- ftable(testing_set[,1], result_10f)
+    confusion_matrix_5f_14 <- ftable(testing_set[,1], result_5f)
+    
+    acc_10f_14 <- sum(diag(confusion_matrix_10f_14))/sum(confusion_matrix_10f_14)
+    acc_5f_14 <- sum(diag(confusion_matrix_5f_14))/sum(confusion_matrix_5f_14)
     
     # Delete columns with 0
     columns_delete <- c()
