@@ -3,10 +3,7 @@ library(coop)
 library(nnet)
 library(glmnet)
 library(e1071)
-<<<<<<< HEAD
-=======
 library(pracma)
->>>>>>> be861ce7490fba30e8e926f27093b21c52313e13
 
 mnist.dat <- read.csv("mnist.csv")
 
